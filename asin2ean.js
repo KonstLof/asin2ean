@@ -1,45 +1,30 @@
-//var LineByLineReader = require('/usr/lib/node_modules/line-by-line/line-by-line.js'),
-var lineReader = require('./node_modules/line-by-line'),
-//  crypto = require("./node_modules/crypto-js"),
-  amazon = require('./node_modules/amazon-product-api');
-	lr = new lineReader('asin.csv', {skipEmptyLines: true }),
+var fs  = require("fs"),
+  amazon = require('./node_modules/amazon-product-api'),
   client = amazon.createClient({
-    awsId: "aws ID",
-    awsSecret: "aws Secret",
-    awsTag: "aws Tag"
+    awsId: 'AKIAJCPZ6YOH5INNXOZA',
+    awsSecret: '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',
+    awsTag: 'tasteline-20'
   }),
-	row = 0;
-/*
-function getSignatureKey(Crypto, key, dateStamp, regionName, serviceName) {
-  var kDate = Crypto.HmacSHA256(dateStamp, "AWS4" + key);
-  var kRegion = Crypto.HmacSHA256(regionName, kDate);
-  var kService = Crypto.HmacSHA256(serviceName, kRegion);
-  var kSigning = Crypto.HmacSHA256("aws4_request", kService);
-  return kSigning;
-}
-*/
-client.itemLookup({
-  idType: 'UPC',
-  itemId: '884392579524'
-}).then(function(results) {
-  console.log(JSON.stringify(results));
-}).catch(function(err) {
-  console.log(err);
-});
-/*
-lr.on('error', function (err) {
-	throw err;
-});
+  item = {
+    idType: 'ASIN',
+    itemId: 'B000NINVAK'
+  };
 
-lr.on('open', function() {
-	// Do something, like initialise progress bar etc.
+fs.readFileSync('asin.csv').toString().split('\r\n').forEach(function (line) {
+  let line2 = line.toString();
+  if (line2 === 'ASIN') {
+    fs.appendFileSync('asin2ean.csv', 'ASIN,EAN\n');
+  }
+  else if (line === '') {
+  }
+  else {
+    item.itemId = line2;
+    client.itemLookup(item).then(function(results) {
+      let jsonEAN = JSON.stringify(results,['ItemAttributes','EAN']);
+      let strEAN = jsonEAN.substring(29,42);
+      fs.appendFileSync('asin2ean.csv', line2 + ',' + strEAN + '\n');
+    }).catch(function(err) {
+      fs.appendFileSync('errors.txt', JSON.stringify(err) + '\n');
+    });
+  }
 });
-
-lr.on('line', function (line) {
-	console.log(++row + ": " + line);
-});
-
-lr.on('end', function () {
-	console.log("Ok we're done - exiting now.");
-});
-*/
